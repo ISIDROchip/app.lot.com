@@ -77,6 +77,36 @@ class NumberCycle {
       );
 }
 
+class EvenOddRatio {
+  final int evens;
+  final int odds;
+  EvenOddRatio({required this.evens, required this.odds});
+  factory EvenOddRatio.fromJson(Map<String, dynamic> json) => EvenOddRatio(
+        evens: json['evens'] as int,
+        odds: json['odds'] as int,
+      );
+}
+
+class SumRange {
+  final String range;
+  final int count;
+  SumRange({required this.range, required this.count});
+  factory SumRange.fromJson(Map<String, dynamic> json) => SumRange(
+        range: json['range'] as String,
+        count: json['count'] as int,
+      );
+}
+
+class SegmentStat {
+  final String segment;
+  final int frequency;
+  SegmentStat({required this.segment, required this.frequency});
+  factory SegmentStat.fromJson(Map<String, dynamic> json) => SegmentStat(
+        segment: json['segment'] as String,
+        frequency: json['frequency'] as int,
+      );
+}
+
 class AdvancedStats {
   final int totalDraws;
   final double mean;
@@ -88,6 +118,9 @@ class AdvancedStats {
   final List<PairFrequency> topPairs;
   final List<PositionFrequency> positionFrequency;
   final List<NumberCycle> cycles;
+  final EvenOddRatio evenOddRatio;
+  final List<SumRange> sumDistribution;
+  final List<SegmentStat> segmentAnalysis;
 
   AdvancedStats({
     required this.totalDraws,
@@ -100,6 +133,9 @@ class AdvancedStats {
     required this.topPairs,
     required this.positionFrequency,
     required this.cycles,
+    required this.evenOddRatio,
+    required this.sumDistribution,
+    required this.segmentAnalysis,
   });
 
   factory AdvancedStats.fromJson(Map<String, dynamic> json) => AdvancedStats(
@@ -122,6 +158,13 @@ class AdvancedStats {
             .toList(),
         cycles: (json['cycles'] as List)
             .map((e) => NumberCycle.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        evenOddRatio: EvenOddRatio.fromJson(json['evenOddRatio'] as Map<String, dynamic>),
+        sumDistribution: (json['sumDistribution'] as List)
+            .map((e) => SumRange.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        segmentAnalysis: (json['segmentAnalysis'] as List)
+            .map((e) => SegmentStat.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 }

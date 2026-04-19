@@ -59,6 +59,9 @@ export interface AdvancedStats {
   topPairs: Array<{ numberA: number; numberB: number; frequency: number }>;
   positionFrequency: Array<{ position: number; number: number; frequency: number }>;
   cycles: Array<{ number: number; drawsSinceLast: number; avgCycle: number | null }>;
+  evenOddRatio: { evens: number; odds: number };
+  sumDistribution: Array<{ range: string; count: number }>;
+  segmentAnalysis: Array<{ segment: string; frequency: number }>;
 }
 
 export async function getAdvancedStats(lotteryId?: string): Promise<AdvancedStats> {
@@ -166,5 +169,68 @@ export async function getAdvancedStats(lotteryId?: string): Promise<AdvancedStat
     avgCycle: r.avg_cycle ? parseFloat(r.avg_cycle) : null,
   }));
 
-  return { totalDraws, mean: parseFloat(mean.toFixed(2)), stdDev: parseFloat(stdDev.toFixed(2)), median, mode, hotNumbers, coldNumbers, topPairs, positionFrequency, cycles };
+  // New: Even/Odd and Sum Analysis
+  const { rows: drawRows } = await pool.query<{ numbers: number[] }>(
+    `SELECT numbers FROM historical_results WHERE 1=1 ${lotteryFilter}`,
+  );
+  
+  let totalEvens = 0;
+  let totalOdds = 0;
+  let totalNumbers = 0;
+  const sums: number[] = [];
+
+  for (const draw of drawRows) {
+    for (const n of draw.numbers) {
+      if (n % 2 === 0) totalEvens++; else totalOdds++;
+      totalNumbers++;
+    }
+    sums.push(draw.numbers.reduce((a, b) => a + Number(b), 0));
+  }
+
+  const evenOddRatio = {
+    evens: totalNumbers > 0 ? Math.round((totalEvens / totalNumbers) * 100) : 0,
+    odds: totalNumbers > 0 ? Math.round((totalOdds / totalNumbers) * 100) : 0,
+  };
+
+  // Sum distribution in ranges of 20
+  const sumDist: Record<string, number> = {};
+  for (const s of sums) {
+    const rangeStart = Math.floor(s / 20) * 20;
+    const range = `${rangeStart}-${rangeStart + 19}`;
+    sumDist[range] = (sumDist[range] || 0) + 1;
+  }
+  const sumDistribution = Object.entries(sumDist)
+    .map(([range, count]) => ({ range, count }))
+    .sort((a, b) => parseInt(a.range) - parseInt(b.range));
+
+  // Segment analysis (1-10, 11-20, 21-30, 31-40)
+  const segments = [
+    { name: '1-10', count: 0 },
+    { name: '11-20', count: 0 },
+    { name: '21-30', count: 0 },
+    { name: '31-40', count: 0 },
+  ];
+  for (const f of freqs) {
+    if (f.number <= 10) segments[0].count += f.frequency;
+    else if (f.number <= 20) segments[1].count += f.frequency;
+    else if (f.number <= 30) segments[2].count += f.frequency;
+    else segments[3].count += f.frequency;
+  }
+  const segmentAnalysis = segments.map(s => ({ segment: s.name, frequency: s.count }));
+
+  return { 
+    totalDraws, 
+    mean: parseFloat(mean.toFixed(2)), 
+    stdDev: parseFloat(stdDev.toFixed(2)), 
+    median, 
+    mode, 
+    hotNumbers, 
+    coldNumbers, 
+    topPairs, 
+    positionFrequency, 
+    cycles,
+    evenOddRatio,
+    sumDistribution,
+    segmentAnalysis
+  };
 }

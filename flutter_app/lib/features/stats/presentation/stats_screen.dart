@@ -22,7 +22,7 @@ class _StatsScreenState extends State<StatsScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 5, vsync: this);
+    _tabCtrl = TabController(length: 6, vsync: this);
     _load();
   }
 
@@ -131,6 +131,7 @@ class _StatsScreenState extends State<StatsScreen>
                   Tab(text: 'Frecuencias'),
                   Tab(text: 'Pares'),
                   Tab(text: 'Posición'),
+                  Tab(text: 'Patrones'),
                 ],
               ),
             ),
@@ -151,6 +152,7 @@ class _StatsScreenState extends State<StatsScreen>
                                 _buildFrecuencias(),
                                 _buildPares(),
                                 _buildPosicion(),
+                                _buildPatrones(),
                               ],
                             ),
             ),
@@ -457,6 +459,173 @@ class _StatsScreenState extends State<StatsScreen>
 
   // ── Tab 5: Frecuencia por posición ────────────────────────────────────
 
+  // ── Tab 6: Patrones (Par/Impar, Sumas, Segmentos) ────────────────────
+
+  Widget _buildPatrones() {
+    final s = _stats!;
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        // Even/Odd Balance
+        _SectionHeader(
+            title: 'BALANCE PAR / IMPAR',
+            subtitle: 'Distribución porcentual de los números extraídos'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: LuxoraColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: LuxoraColors.divider),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  _PatternIndicator(
+                      label: 'PARES',
+                      percent: s.evenOddRatio.evens,
+                      color: LuxoraColors.primary),
+                  const SizedBox(width: 20),
+                  _PatternIndicator(
+                      label: 'IMPARES',
+                      percent: s.evenOddRatio.odds,
+                      color: LuxoraColors.accent),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  height: 12,
+                  child: Row(
+                    children: [
+                      Expanded(
+                          flex: s.evenOddRatio.evens,
+                          child: Container(color: LuxoraColors.primary)),
+                      Expanded(
+                          flex: s.evenOddRatio.odds,
+                          child: Container(color: LuxoraColors.accent)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Sum Distribution
+        _SectionHeader(
+            title: 'DISTRIBUCIÓN DE SUMAS',
+            subtitle: 'Frecuencia de la suma total de los bolos'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: LuxoraColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: LuxoraColors.divider),
+          ),
+          child: Column(
+            children: s.sumDistribution.map((sd) {
+              final maxCount = s.sumDistribution
+                  .fold(0, (prev, e) => e.count > prev ? e.count : prev);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                        width: 60,
+                        child: Text(sd.range,
+                            style: const TextStyle(
+                                color: LuxoraColors.textSecondary,
+                                fontSize: 11))),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: sd.count / (maxCount == 0 ? 1 : maxCount),
+                          minHeight: 8,
+                          backgroundColor: LuxoraColors.divider,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF9C27B0)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text('${sd.count}',
+                        style: const TextStyle(
+                            color: LuxoraColors.textPrimary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Segment Analysis
+        _SectionHeader(
+            title: 'ACTIVIDAD POR SEGMENTO',
+            subtitle: 'Frecuencia de aparición por rangos de números'),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 2.2,
+          children: s.segmentAnalysis.map((sa) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: LuxoraColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: LuxoraColors.divider),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: LuxoraColors.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(sa.segment,
+                            style: const TextStyle(
+                                color: LuxoraColors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13)),
+                        Text('${sa.frequency} apariciones',
+                            style: const TextStyle(
+                                color: LuxoraColors.textSecondary,
+                                fontSize: 10)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+
+        const SizedBox(height: 80),
+      ],
+    );
+  }
+
   Widget _buildPosicion() {
     final posFreqs = _stats!.positionFrequency;
     if (posFreqs.isEmpty) return _buildNoData();
@@ -724,6 +893,31 @@ class _SmallBall extends StatelessWidget {
       child: Text('$number',
           style: const TextStyle(
               color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+    );
+  }
+}
+class _PatternIndicator extends StatelessWidget {
+  final String label;
+  final int percent;
+  final Color color;
+  const _PatternIndicator(
+      {required this.label, required this.percent, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text('$percent%',
+              style: TextStyle(
+                  color: color, fontSize: 24, fontWeight: FontWeight.bold)),
+          Text(label,
+              style: const TextStyle(
+                  color: LuxoraColors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold)),
+        ],
+      ),
     );
   }
 }
