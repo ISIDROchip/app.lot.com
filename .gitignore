@@ -1,0 +1,26 @@
+# Node.js
+node_modules/
+dist/
+build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Environment
+.env
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+# pubspec.lock  # Uncomment to ignore lock file
+
+# Test coverage
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
