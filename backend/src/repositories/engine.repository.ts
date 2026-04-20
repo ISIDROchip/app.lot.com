@@ -383,13 +383,15 @@ export async function savePoolBatch(combinations: Array<{ numbers: number[], sco
   try {
     await client.query('BEGIN');
     for (const combo of combinations) {
-      // Usar ON CONFLICT para asegurar que no se repitan combinaciones en el pool global
-      // El índice único idx_lot_pool_unique_numbers garantiza esto a nivel de DB.
+      // Ordenamos los números de forma ascendente antes de guardar.
+      // Esto garantiza que [1,2,3,4,5,6] y [6,5,4,3,2,1] se traten como la MISMA combinación (Set).
+      const sorted = [...combo.numbers].sort((a, b) => a - b);
+      
       await client.query(
         `INSERT INTO lot_pool_combinations (lottery_id, numbers, score) 
          VALUES ($1, $2, $3)
          ON CONFLICT (lottery_id, numbers) DO NOTHING`,
-        [lotteryId ?? null, combo.numbers, combo.score]
+        [lotteryId ?? null, sorted, combo.score]
       );
     }
     await client.query('COMMIT');
