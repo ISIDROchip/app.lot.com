@@ -147,6 +147,18 @@ async function clearLotteryData(lotteryId: string | undefined, progress: Scraper
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function runScraper(jobId: string, params: ScraperParams): Promise<void> {
+  let activeLotteryId = params.lotteryId;
+  if (!activeLotteryId) {
+    try {
+      const { rows } = await pool.query(`SELECT id FROM lotteries WHERE short_name = 'loto_mas' LIMIT 1`);
+      if (rows.length > 0) {
+        activeLotteryId = rows[0].id;
+      }
+    } catch (e) {
+      console.error('Error fetching default lottery:', e);
+    }
+  }
+
   const from = new Date(params.dateFrom);
   const to = new Date(params.dateTo);
   const weekDays = params.weekDays.length > 0 ? params.weekDays : [3, 6];
@@ -170,7 +182,7 @@ export async function runScraper(jobId: string, params: ScraperParams): Promise<
     // PASO 1: Limpiar datos anteriores (como LTFree borraba gt3 y CumplenConReglas)
     progress.messages.push(`Limpiando datos anteriores...`);
     progressStore.set(jobId, { ...progress });
-    await clearLotteryData(params.lotteryId, progress);
+    await clearLotteryData(activeLotteryId, progress);
     progressStore.set(jobId, { ...progress });
 
     // PASO 2: Scrapear e insertar
@@ -190,7 +202,7 @@ export async function runScraper(jobId: string, params: ScraperParams): Promise<
           await pool.query(
             `INSERT INTO historical_results (draw_date, numbers, uploaded_by, lottery_id)
              VALUES ($1, $2, $3, $4)`,
-            [isoDate, numbers, params.uploadedBy ?? null, params.lotteryId ?? null],
+            [isoDate, numbers, params.uploadedBy ?? null, activeLotteryId ?? null],
           );
           progress.inserted++;
           progress.messages.push(`  ✓ ${numbers.join('-')}`);
@@ -217,7 +229,7 @@ export async function runScraper(jobId: string, params: ScraperParams): Promise<
     // Equivalente a ejecutar todos los SPs de LTFree en secuencia
     progress.messages.push(`Recalculando motor estadístico desde cero...`);
     progressStore.set(jobId, { ...progress });
-    await syncEngineTablesFromHistory(params.lotteryId);
+    await syncEngineTablesFromHistory(activeLotteryId);
     progress.messages.push(`✅ Motor estadístico recalculado`);
     progress.messages.push(`  → lot_number_frequency actualizada`);
     progress.messages.push(`  → lot_number_cycles actualizada`);
