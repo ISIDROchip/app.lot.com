@@ -17,6 +17,8 @@ import '../../features/admin/presentation/reports_screen.dart';
 import '../../features/admin/presentation/engine_pool_screen.dart';
 import '../../features/admin/presentation/user_management_screen.dart';
 import '../../features/admin/presentation/top_probables_screen.dart';
+import '../../features/admin/presentation/messages_management_screen.dart';
+import '../../features/admin/presentation/coming_soon_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -53,6 +55,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/admin/engine-pool', builder: (_, __) => const EnginePoolScreen()),
       GoRoute(path: '/admin/users', builder: (_, __) => const UserManagementScreen()),
       GoRoute(path: '/admin/top-probables', builder: (_, __) => const TopProbablesScreen()),
+      GoRoute(path: '/admin/messages', builder: (_, __) => const MessagesManagementScreen()),
+      GoRoute(path: '/admin/contracts', builder: (_, __) => const ComingSoonScreen(title: 'Contratos')),
+      GoRoute(path: '/admin/stats', builder: (_, __) => const ComingSoonScreen(title: 'Estadísticas del sistema')),
+      GoRoute(path: '/admin/logs', builder: (_, __) => const ComingSoonScreen(title: 'Logs de errores')),
+      GoRoute(path: '/admin/tariffs', builder: (_, __) => const ComingSoonScreen(title: 'Tarifas')),
+      GoRoute(path: '/admin/bank-accounts-mgmt', builder: (_, __) => const ComingSoonScreen(title: 'Cuentas Bancarias')),
+      GoRoute(path: '/admin/oauth', builder: (_, __) => const ComingSoonScreen(title: 'OAuth Providers')),
     ],
   );
 });
