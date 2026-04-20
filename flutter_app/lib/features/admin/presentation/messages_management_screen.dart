@@ -50,6 +50,36 @@ class _MessagesManagementScreenState extends State<MessagesManagementScreen> {
     }
   }
 
+  Future<void> _deleteMessage(String id) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('ELIMINAR MENSAJE'),
+        content: const Text('¿Estás seguro de eliminar este mensaje predefinido?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCELAR')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('ELIMINAR', style: TextStyle(color: LuxoraColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await dioInstance.delete('/admin/messages/$id');
+        _fetchMessages();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al eliminar: $e')),
+          );
+        }
+      }
+    }
+  }
+
   void _showEditDialog([Map<String, dynamic>? message]) {
     final isEditing = message != null;
     final titleCtrl = TextEditingController(text: message?['title'] ?? '');
@@ -169,6 +199,10 @@ class _MessagesManagementScreenState extends State<MessagesManagementScreen> {
                             IconButton(
                               icon: const Icon(Icons.edit_rounded, size: 20),
                               onPressed: () => _showEditDialog(msg),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline_rounded, size: 20, color: LuxoraColors.error),
+                              onPressed: () => _deleteMessage(msg['id']),
                             ),
                           ],
                         ),

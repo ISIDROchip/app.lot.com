@@ -167,26 +167,26 @@ adminRouter.get('/messages/:id', auth, admin, async (req: Request, res: Response
   } catch (err) { next(err); }
 });
 
-adminRouter.post('/messages', auth, superAdmin, async (req: Request, res: Response, next: NextFunction) => {
+adminRouter.post('/messages', auth, admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     res.status(201).json(await messageService.create(req.body));
   } catch (err) { next(err); }
 });
 
-adminRouter.put('/messages/:id', auth, superAdmin, async (req: Request, res: Response, next: NextFunction) => {
+adminRouter.put('/messages/:id', auth, admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     res.json(await messageService.update(req.params.id, req.body));
   } catch (err) { next(err); }
 });
 
-adminRouter.delete('/messages/:id', auth, superAdmin, async (req: Request, res: Response, next: NextFunction) => {
+adminRouter.delete('/messages/:id', auth, admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     await messageService.deleteById(req.params.id);
     res.status(204).send();
   } catch (err) { next(err); }
 });
 
-adminRouter.patch('/messages/:id/status', auth, superAdmin, async (req: Request, res: Response, next: NextFunction) => {
+adminRouter.patch('/messages/:id/status', auth, admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     res.json(await messageService.setStatus(req.params.id, req.body.is_active));
   } catch (err) { next(err); }
@@ -285,7 +285,7 @@ adminRouter.get('/reports/hits-by-contract', auth, superAdmin, async (req: Reque
   } catch (err) { next(err); }
 });
 
-adminRouter.get('/reports/contracts-detailed', auth, superAdmin, async (req: Request, res: Response, next: NextFunction) => {
+adminRouter.get('/reports/contracts-detailed', auth, admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.query.user_id as string | undefined;
     if (!userId) {
