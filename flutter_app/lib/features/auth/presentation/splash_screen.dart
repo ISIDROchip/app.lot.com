@@ -223,7 +223,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ],
                     ).createShader(bounds),
                     child: const Text(
-                      'LUXORA',
+                      'LUXORA BETIX',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 42,

@@ -237,7 +237,7 @@ class _LotteryScreenState extends State<LotteryScreen>
                             colors: [LuxoraColors.accent, Colors.white],
                           ).createShader(b),
                           child: const Text(
-                            'LUXORA',
+                            'LUXORA BETIX',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 22,

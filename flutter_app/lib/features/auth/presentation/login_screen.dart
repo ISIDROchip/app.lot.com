@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   colors: [LuxoraColors.accent, Colors.white],
                                 ).createShader(bounds),
                                 child: const Text(
-                                  'LUXORA',
+                                  'LUXORA BETIX',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 36,
