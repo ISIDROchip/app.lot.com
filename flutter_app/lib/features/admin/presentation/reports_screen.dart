@@ -31,6 +31,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill user ID if provided via router extra
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final extra = GoRouterState.of(context).extra;
+      if (extra is String) {
+        _userIdController.text = extra;
+        _loadReport();
+      }
+    });
+  }
+
   Future<void> _pickDate({required bool isFrom}) async {
     final initialDate = isFrom ? _from : _to;
     final picked = await showDatePicker(
