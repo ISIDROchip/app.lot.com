@@ -862,7 +862,7 @@ class _LotteryScreenState extends State<LotteryScreen>
                       context.go('/donations');
                     },
                   ),
-                  if (_isSuperAdmin)
+                  if (_isAdmin)
                     _NavItem(
                       icon: Icons.account_balance_rounded,
                       label: 'Cuentas',
