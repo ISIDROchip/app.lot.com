@@ -113,3 +113,7 @@ export async function getFrequencies(): Promise<FrequencyRecord[]> {
 export async function getTrends(): Promise<{ mostFrequent: number[]; leastFrequent: number[] }> {
   return statsRepo.getTrends();
 }
+
+export async function getTopPoolCombinations(limit = 10, lotteryId?: string) {
+  return engineRepo.getTopPoolCombinations(limit, lotteryId);
+}

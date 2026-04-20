@@ -371,3 +371,11 @@ adminRouter.get('/engine/pool-status', auth, superAdmin, async (req: Request, re
     res.json({ available: count });
   } catch (err) { next(err); }
 });
+
+adminRouter.get('/engine/top-combinations', auth, superAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const lotteryId = req.query.lottery_id as string | undefined;
+    const combinations = await statsService.getTopPoolCombinations(10, lotteryId);
+    res.json(combinations);
+  } catch (err) { next(err); }
+});

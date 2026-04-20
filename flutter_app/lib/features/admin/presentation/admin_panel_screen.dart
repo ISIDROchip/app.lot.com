@@ -159,6 +159,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
               ),
               const SizedBox(height: 10),
               _AdminCard(
+                icon: Icons.workspace_premium_rounded,
+                title: 'Top 10 Probables',
+                subtitle: 'Las 10 mejores jugadas según el motor',
+                color: LuxoraColors.primary,
+                onTap: () => context.go('/admin/top-probables'),
+              ),
+              const SizedBox(height: 10),
+              _AdminCard(
                 icon: Icons.bar_chart_rounded,
                 title: 'Estadísticas del sistema',
                 subtitle: 'Overview y actividad',

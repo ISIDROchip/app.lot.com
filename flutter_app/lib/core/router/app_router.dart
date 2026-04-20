@@ -16,6 +16,7 @@ import '../../features/admin/presentation/admin_panel_screen.dart';
 import '../../features/admin/presentation/reports_screen.dart';
 import '../../features/admin/presentation/engine_pool_screen.dart';
 import '../../features/admin/presentation/user_management_screen.dart';
+import '../../features/admin/presentation/top_probables_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -51,6 +52,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/admin/reports', builder: (_, __) => const ReportsScreen()),
       GoRoute(path: '/admin/engine-pool', builder: (_, __) => const EnginePoolScreen()),
       GoRoute(path: '/admin/users', builder: (_, __) => const UserManagementScreen()),
+      GoRoute(path: '/admin/top-probables', builder: (_, __) => const TopProbablesScreen()),
     ],
   );
 });

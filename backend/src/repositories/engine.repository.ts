@@ -456,3 +456,17 @@ export async function deliverFromPool(userId: string, count: number, lotteryId?:
     client.release();
   }
 }
+
+export async function getTopPoolCombinations(limit = 10, lotteryId?: string): Promise<Array<{ numbers: number[], score: number }>> {
+  const { rows } = await pool.query<{ numbers: number[], score: string }>(
+    `SELECT numbers, score FROM lot_pool_combinations 
+     WHERE is_delivered = FALSE 
+       AND (lottery_id = $1 OR ($1 IS NULL AND lottery_id IS NULL))
+     ORDER BY score DESC LIMIT $2`,
+    [lotteryId ?? null, limit]
+  );
+  return rows.map(r => ({
+    numbers: r.numbers,
+    score: parseFloat(r.score)
+  }));
+}
