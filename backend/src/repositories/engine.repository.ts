@@ -383,8 +383,12 @@ export async function savePoolBatch(combinations: Array<{ numbers: number[], sco
   try {
     await client.query('BEGIN');
     for (const combo of combinations) {
+      // Usar ON CONFLICT para asegurar que no se repitan combinaciones en el pool global
+      // El índice único idx_lot_pool_unique_numbers garantiza esto a nivel de DB.
       await client.query(
-        `INSERT INTO lot_pool_combinations (lottery_id, numbers, score) VALUES ($1, $2, $3)`,
+        `INSERT INTO lot_pool_combinations (lottery_id, numbers, score) 
+         VALUES ($1, $2, $3)
+         ON CONFLICT (lottery_id, numbers) DO NOTHING`,
         [lotteryId ?? null, combo.numbers, combo.score]
       );
     }
@@ -400,6 +404,14 @@ export async function savePoolBatch(combinations: Array<{ numbers: number[], sco
 export async function countAvailablePool(lotteryId?: string): Promise<number> {
   const { rows } = await pool.query<{ count: string }>(
     `SELECT COUNT(*) AS count FROM lot_pool_combinations WHERE is_delivered = FALSE AND (lottery_id = $1 OR ($1 IS NULL AND lottery_id IS NULL))`,
+    [lotteryId ?? null]
+  );
+  return parseInt(rows[0].count, 10);
+}
+
+export async function countTotalPool(lotteryId?: string): Promise<number> {
+  const { rows } = await pool.query<{ count: string }>(
+    `SELECT COUNT(*) AS count FROM lot_pool_combinations WHERE (lottery_id = $1 OR ($1 IS NULL AND lottery_id IS NULL))`,
     [lotteryId ?? null]
   );
   return parseInt(rows[0].count, 10);

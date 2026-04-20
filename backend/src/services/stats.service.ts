@@ -85,10 +85,25 @@ export async function generatePoolBatch(amount = 1000, lotteryId?: string): Prom
 
   const batch = response.data;
 
-  // 3. Save to pool
-  await engineRepo.savePoolBatch(batch, lotteryId);
+  // 3. Check current pool size to not exceed the mathematical limit
+  const currentCount = await engineRepo.countTotalPool(lotteryId);
+  const LOTO_MAX_COMBINATIONS = 3837380; // Total 38C6
+  
+  if (currentCount >= LOTO_MAX_COMBINATIONS) {
+    throw new AppError(
+      'El pool ya ha alcanzado el límite máximo de todas las combinaciones posibles (3,837,380).',
+      'POOL_FULL',
+      400
+    );
+  }
 
-  return { total: batch.length };
+  const remaining = LOTO_MAX_COMBINATIONS - currentCount;
+  const actualAmount = Math.min(amount, remaining);
+
+  // 4. Save to pool
+  await engineRepo.savePoolBatch(batch.slice(0, actualAmount), lotteryId);
+
+  return { total: Math.min(batch.length, actualAmount) };
 }
 
 export async function getFrequencies(): Promise<FrequencyRecord[]> {

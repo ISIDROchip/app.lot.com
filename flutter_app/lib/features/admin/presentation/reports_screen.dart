@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../shared/theme/app_theme.dart';
 
