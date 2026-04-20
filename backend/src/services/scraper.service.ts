@@ -106,11 +106,8 @@ async function clearLotteryData(lotteryId: string | undefined, progress: Scraper
     await client.query('BEGIN');
 
     if (lotteryId) {
-      // Borrar solo los datos de esta lotería específica
-      const { rowCount: hrDeleted } = await client.query(
-        `DELETE FROM historical_results WHERE lottery_id = $1`, [lotteryId],
-      );
-      progress.messages.push(`🗑 Borrados ${hrDeleted ?? 0} registros de historical_results para esta lotería`);
+      // Ya no borramos todo el historial, el ON CONFLICT se encargará de los duplicados
+      // progress.messages.push(`🗑 Historial mantenido (se usarán UPSERTS)`);
 
       // Borrar tablas del motor para esta lotería
       await client.query(`DELETE FROM lot_number_frequency   WHERE lottery_id = $1`, [lotteryId]);
@@ -119,11 +116,7 @@ async function clearLotteryData(lotteryId: string | undefined, progress: Scraper
       await client.query(`DELETE FROM lot_position_frequency WHERE lottery_id = $1`, [lotteryId]);
       await client.query(`DELETE FROM lot_generated_combinations WHERE lottery_id = $1`, [lotteryId]);
     } else {
-      // Sin lottery_id: borrar todos los registros sin lotería asignada
-      const { rowCount: hrDeleted } = await client.query(
-        `DELETE FROM historical_results WHERE lottery_id IS NULL`,
-      );
-      progress.messages.push(`🗑 Borrados ${hrDeleted ?? 0} registros de historical_results (sin lotería)`);
+      // progress.messages.push(`🗑 Historial sin lotería mantenido`);
 
       await client.query(`DELETE FROM lot_number_frequency   WHERE lottery_id IS NULL`);
       await client.query(`DELETE FROM lot_number_cycles      WHERE lottery_id IS NULL`);
@@ -201,7 +194,9 @@ export async function runScraper(jobId: string, params: ScraperParams): Promise<
         if (numbers) {
           await pool.query(
             `INSERT INTO historical_results (draw_date, numbers, uploaded_by, lottery_id)
-             VALUES ($1, $2, $3, $4)`,
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (lottery_id, draw_date) DO UPDATE 
+             SET numbers = EXCLUDED.numbers, created_at = NOW()`,
             [isoDate, numbers, params.uploadedBy ?? null, activeLotteryId ?? null],
           );
           progress.inserted++;
