@@ -373,3 +373,72 @@ export async function getAllActivePullCombinations(): Promise<number[][]> {
   );
   return rows.map(r => r.combination_str.split(',').map(Number));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRE-GENERATED POOL METHODS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function savePoolBatch(combinations: Array<{ numbers: number[], score: number }>, lotteryId?: string): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const combo of combinations) {
+      await client.query(
+        `INSERT INTO lot_pool_combinations (lottery_id, numbers, score) VALUES ($1, $2, $3)`,
+        [lotteryId ?? null, combo.numbers, combo.score]
+      );
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export async function countAvailablePool(lotteryId?: string): Promise<number> {
+  const { rows } = await pool.query<{ count: string }>(
+    `SELECT COUNT(*) AS count FROM lot_pool_combinations WHERE is_delivered = FALSE AND (lottery_id = $1 OR ($1 IS NULL AND lottery_id IS NULL))`,
+    [lotteryId ?? null]
+  );
+  return parseInt(rows[0].count, 10);
+}
+
+export async function deliverFromPool(userId: string, count: number, lotteryId?: string): Promise<number[][]> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Select the best undelivered combinations
+    const { rows } = await client.query<{ id: string, numbers: number[] }>(
+      `SELECT id, numbers FROM lot_pool_combinations 
+       WHERE is_delivered = FALSE 
+         AND (lottery_id = $1 OR ($1 IS NULL AND lottery_id IS NULL))
+       ORDER BY score DESC LIMIT $2 FOR UPDATE`,
+      [lotteryId ?? null, count]
+    );
+
+    if (rows.length < count) {
+      throw new Error(`No hay suficientes combinaciones disponibles en el pool (${rows.length}/${count})`);
+    }
+
+    const ids = rows.map(r => r.id);
+    
+    // Mark as delivered
+    await client.query(
+      `UPDATE lot_pool_combinations 
+       SET is_delivered = TRUE, delivered_to = $1, delivered_at = NOW() 
+       WHERE id = ANY($2)`,
+      [userId, ids]
+    );
+
+    await client.query('COMMIT');
+    return rows.map(r => r.numbers);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}

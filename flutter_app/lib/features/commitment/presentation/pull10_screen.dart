@@ -124,13 +124,17 @@ class _Pull10ScreenState extends State<Pull10Screen> {
     } on DioException catch (e) {
       if (!mounted) return;
       debugPrint('Pull10 DioException: status=${e.response?.statusCode} data=${e.response?.data} type=${e.type}');
-      if (e.response?.statusCode == 429) {
-        setState(() {
-          _error = 'Has alcanzado el límite de 20 Pulls de 10 en los últimos 30 días.';
-          _loading = false;
-        });
-        return;
+      if (e.response?.statusCode == 400) {
+        final serverMsg = e.response?.data is Map ? (e.response?.data['error'] ?? '') : '';
+        if (serverMsg.contains('15')) {
+          setState(() {
+            _error = 'Has alcanzado el límite total de 15 Pulls de 10 autorizados.';
+            _loading = false;
+          });
+          return;
+        }
       }
+      
       // Show detailed error for debugging
       final statusCode = e.response?.statusCode;
       final serverMsg = e.response?.data is Map

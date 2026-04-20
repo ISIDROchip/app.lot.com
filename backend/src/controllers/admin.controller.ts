@@ -11,6 +11,8 @@ import * as errorLogRepo from '../repositories/errorLog.repository';
 import * as commitmentRepo from '../repositories/commitment.repository';
 import * as commitmentService from '../services/commitment.service';
 import * as lotteryCatalog from '../repositories/lottery_catalog.repository';
+import * as statsService from '../services/stats.service';
+import * as engineRepo from '../repositories/engine.repository';
 import { pool } from '../config/database';
 
 export const adminRouter = Router();
@@ -348,5 +350,24 @@ adminRouter.patch('/lotteries/:id/status', auth, superAdmin, async (req: Request
     const updated = await lotteryCatalog.setStatus(req.params.id, req.body.is_active);
     if (!updated) { res.status(404).json({ error: 'Lotería no encontrada' }); return; }
     res.json(updated);
+  } catch (err) { next(err); }
+});
+
+// ── Engine Pool ────────────────────────────────────────────────────────────
+
+adminRouter.post('/engine/generate-pool', auth, superAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const amount = parseInt(req.body.amount as string) || 1000;
+    const lotteryId = req.body.lottery_id as string | undefined;
+    const result = await statsService.generatePoolBatch(amount, lotteryId);
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
+adminRouter.get('/engine/pool-status', auth, superAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const lotteryId = req.query.lottery_id as string | undefined;
+    const count = await engineRepo.countAvailablePool(lotteryId);
+    res.json({ available: count });
   } catch (err) { next(err); }
 });

@@ -10,103 +10,40 @@ import {
   getEngineConfig,
   getRecentHistoricalCombinations,
   saveGeneratedCombination,
-  getPullCountLast30Days,
-  getAllActivePullCombinations,
-  getUserPullHistory,
+  deliverFromPool,
 } from '../repositories/engine.repository';
+import { pool } from '../config/database';
 import { generatePull10 } from '../utils/combinationOptimizer';
 
 export async function pull10(userId: string, lotteryId?: string): Promise<Pull10Result> {
-  // 1. Regla: un usuario puede solicitar hasta 20 Pulls de 10 en los últimos 30 días
-  const pullCountLast30Days = await getPullCountLast30Days(userId);
-  const pullsInLast30Days = Math.ceil(pullCountLast30Days / 10);
-  if (pullsInLast30Days >= 20) {
-    throw new AppError(
-      'Has alcanzado el límite de 20 Pulls de 10 en los últimos 30 días.',
-      'PULL_MONTHLY_LIMIT',
-      429,
-    );
+  // 1. Regla: un usuario puede solicitar hasta 15 Pulls de 10 EN TOTAL
+  const totalPullCount = await pool.query<{ count: string }>(
+    `SELECT COUNT(*) AS count FROM plays WHERE user_id = $1 AND source = 'pull_10'`,
+    [userId]
+  );
+  const totalPulls = Math.ceil(parseInt(totalPullCount.rows[0].count, 10) / 10);
+  
+  if (totalPulls >= 15) {
+     throw new AppError(
+       'Has alcanzado el límite total de 15 Pulls de 10 autorizados.',
+       'PULL_TOTAL_LIMIT',
+       400
+     );
   }
 
-  // 3. Cargar todos los datos del motor en paralelo
-  const [
-    freqRecords, engineFreqs, cycles, topPairs,
-    positionFreqs, engineConfig, recentHistory,
-    allActiveCombinations,
-    userPullHistory,        // pulls previos del mismo usuario (todos sus contratos)
-  ] = await Promise.all([
-    getFrequencies(),
-    getNumberFrequencies(lotteryId),
-    getNumberCycles(lotteryId),
-    getTopPairs(20, lotteryId),
-    getPositionFrequencies(lotteryId),
-    getEngineConfig(),
-    getRecentHistoricalCombinations(50, lotteryId),
-    getAllActivePullCombinations(),
-    getUserPullHistory(userId), // garantiza que el nuevo pull no repite combinaciones previas del usuario
-  ]);
+  // 2. Entregar desde el Pool pre-generado (Capa LTFree + Luxora)
+  // deliverFromPool ya se encarga de que no se repitan entre usuarios
+  const combinations = await deliverFromPool(userId, 10, lotteryId);
 
-  const frequencies = new Map<number, number>(freqRecords.map(r => [r.number, r.count]));
-  if (engineFreqs.length > 0) {
-    engineFreqs.forEach(f => frequencies.set(f.number, f.frequency));
-  }
-
-  // 4. Historial extendido:
-  //    - Resultados históricos de sorteos reales
-  //    - Combinaciones activas de TODOS los usuarios (anti-choque)
-  //    - Pulls previos del mismo usuario (anti-repetición entre contratos)
-  const extendedHistory = [
-    ...recentHistory,
-    ...allActiveCombinations,
-    ...userPullHistory,
-  ];
-
-  const combinations = generatePull10(frequencies, extendedHistory, {
-    cycles,
-    topPairs,
-    positionFreqs,
-    config: engineConfig,
-  });
-
-  // 5. Verificación final: ninguna combinación puede existir ya en la DB
-  //    de ningún usuario (pull activo de cualquier persona)
-  const activeCombinationSet = new Set(allActiveCombinations.map(c => c.join(',')));
-  const userHistorySet = new Set(userPullHistory.map(c => c.join(',')));
-
-  const safeCombinations = combinations.filter(c => {
-    const key = [...c].sort((a, b) => a - b).join(',');
-    return !activeCombinationSet.has(key) && !userHistorySet.has(key);
-  });
-
-  // Si alguna combinación chocó, regenerar las que faltan
-  let finalCombinations = [...safeCombinations];
-  let retries = 0;
-  while (finalCombinations.length < 10 && retries < 50) {
-    const needed = 10 - finalCombinations.length;
-    const extra = generatePull10(frequencies,
-      [...extendedHistory, ...finalCombinations],
-      { cycles, topPairs, positionFreqs, config: engineConfig },
-    ).slice(0, needed);
-
-    for (const c of extra) {
-      const key = [...c].sort((a, b) => a - b).join(',');
-      if (!activeCombinationSet.has(key) && !userHistorySet.has(key) &&
-          !finalCombinations.some(f => f.join(',') === key)) {
-        finalCombinations.push(c);
-        activeCombinationSet.add(key); // mark as used immediately
-      }
-    }
-    retries++;
-  }
-
-  // 6. Persistir cada combinación
-  for (const numbers of finalCombinations) {
+  // 3. Persistir cada combinación en la tabla de jugadas (plays)
+  for (const numbers of combinations) {
     await savePlay(userId, 'Loto', numbers, 'pull_10');
+    // También guardamos una copia en lot_generated_combinations para auditoría
     await saveGeneratedCombination(numbers, 0, 0, userId, 'pull_10').catch(() => {});
   }
 
   return {
-    combinations: finalCombinations,
+    combinations,
     lottery_id: lotteryId ?? null,
     timestamp: new Date().toISOString(),
   };

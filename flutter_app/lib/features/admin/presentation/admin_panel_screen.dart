@@ -151,6 +151,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
               ),
               const SizedBox(height: 10),
               _AdminCard(
+                icon: Icons.auto_awesome_rounded,
+                title: 'Motor de Combinaciones',
+                subtitle: 'Generar lote masivo (Pool) y ver estado',
+                color: LuxoraColors.primary,
+                onTap: () => context.go('/admin/engine-pool'),
+              ),
+              const SizedBox(height: 10),
+              _AdminCard(
                 icon: Icons.bar_chart_rounded,
                 title: 'Estadísticas del sistema',
                 subtitle: 'Overview y actividad',
